@@ -223,7 +223,7 @@ void UbloxNode::addProductInterface(const std::string & product_category,
     components_.push_back(std::make_shared<HpgRefProduct>(nav_rate_, meas_rate_, updater_, rtcms_, this));
   } else if ((product_category == "HPG" || product_category == "HPS") && ref_rov == "ROV") {
     components_.push_back(std::make_shared<HpgRovProduct>(nav_rate_, updater_, this));
-  } else if (product_category == "HPG" || product_category == "HPS") {
+  } else if (product_category == "HPG" || product_category == "HPS" || product_category == "HDG") {
     components_.push_back(std::make_shared<HpPosRecProduct>(nav_rate_, meas_rate_, frame_id_, updater_, rtcms_, this));
   } else if (product_category == "TIM") {
     components_.push_back(std::make_shared<TimProduct>(frame_id_, updater_, this));
