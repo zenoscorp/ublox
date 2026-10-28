@@ -514,7 +514,15 @@ template <typename T>
 void Gps::subscribe(
     typename CallbackHandler_<T>::Callback callback, unsigned int rate) {
   if (!setRate(T::CLASS_ID, T::MESSAGE_ID, rate)) {
-    return;
+    // Generation-X receivers (ZED-X20P, protocol 50) refuse the legacy
+    // UBX-CFG-MSG rate request with a NAK; their message output is set
+    // through UBX-CFG-VALSET keys instead. The message still arrives when
+    // the receiver's own configuration enables it, so keep the callback
+    // registered rather than silently dropping the subscription.
+    RCLCPP_WARN(logger_,
+                "Receiver refused the rate request for 0x%02x / 0x%02x; "
+                "relying on the receiver's stored message output configuration",
+                T::CLASS_ID, T::MESSAGE_ID);
   }
   subscribe<T>(callback);
 }
