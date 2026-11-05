@@ -1,6 +1,7 @@
 #include <cmath>
 #include <functional>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,10 @@ namespace ublox_node {
 HpPosRecProduct::HpPosRecProduct(uint16_t nav_rate, uint16_t meas_rate, const std::string & frame_id, std::shared_ptr<diagnostic_updater::Updater> updater, std::vector<ublox_gps::Rtcm> rtcms, rclcpp::Node* node)
   : HpgRefProduct(nav_rate, meas_rate, updater, rtcms, node), frame_id_(frame_id)
 {
+  heading_offset_rad_ = node_->declare_parameter<double>("heading_offset_rad", 0.0);
+  if (!std::isfinite(heading_offset_rad_)) {
+    throw std::invalid_argument("heading_offset_rad must be finite");
+  }
   if (getRosBoolean(node_, "publish.nav.relposned")) {
     nav_relposned_pub_ =
       node_->create_publisher<ublox_msgs::msg::NavRELPOSNED9>("navrelposned", 1);
@@ -46,7 +51,9 @@ void HpPosRecProduct::callbackNavRelPosNed(const ublox_msgs::msg::NavRELPOSNED9 
     nav_relposned_pub_->publish(m);
   }
 
-  if (getRosBoolean(node_, "publish.nav.heading")) {
+  if (imu_pub_ &&
+      (m.flags & ublox_msgs::msg::NavRELPOSNED9::FLAGS_REL_POS_HEAD_VALID) &&
+      m.acc_heading > 0) {
     imu_.header.stamp = node_->now();
     imu_.header.frame_id = frame_id_;
 
@@ -54,20 +61,16 @@ void HpPosRecProduct::callbackNavRelPosNed(const ublox_msgs::msg::NavRELPOSNED9 
     imu_.angular_velocity_covariance[0] = -1;
 
     // Transform angle since ublox is representing heading as NED but ROS uses ENU as convention (REP-103).
-    double heading = M_PI_2 - (static_cast<double>(m.rel_pos_heading) * 1e-5 / 180.0 * M_PI);
+    double heading = M_PI_2 - (static_cast<double>(m.rel_pos_heading) * 1e-5 / 180.0 * M_PI) + heading_offset_rad_;
     tf2::Quaternion orientation;
     orientation.setRPY(0, 0, heading);
     imu_.orientation.x = orientation[0];
     imu_.orientation.y = orientation[1];
     imu_.orientation.z = orientation[2];
     imu_.orientation.w = orientation[3];
-    imu_.orientation_covariance[0] = 1000.0;
-    imu_.orientation_covariance[4] = 1000.0;
-    imu_.orientation_covariance[8] = 1000.0;
-    // When heading is reported to be valid, use accuracy reported in 1e-5 deg units
-    if (m.flags & ublox_msgs::msg::NavRELPOSNED9::FLAGS_REL_POS_HEAD_VALID) {
-      imu_.orientation_covariance[8] = ::pow(m.acc_heading * 1e-5 / 180.0 * M_PI, 2);
-    }
+    imu_.orientation_covariance[0] = 1e6;
+    imu_.orientation_covariance[4] = 1e6;
+    imu_.orientation_covariance[8] = ::pow(m.acc_heading * 1e-5 / 180.0 * M_PI, 2);
 
     imu_pub_->publish(imu_);
   }

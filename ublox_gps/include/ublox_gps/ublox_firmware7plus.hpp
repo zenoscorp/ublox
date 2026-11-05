@@ -129,9 +129,13 @@ class UbloxFirmware7Plus : public UbloxFirmware {
     velocity.twist.covariance[cols * 0 + 0] = cov_speed;
     velocity.twist.covariance[cols * 1 + 1] = cov_speed;
     velocity.twist.covariance[cols * 2 + 2] = cov_speed;
-    velocity.twist.covariance[cols * 3 + 3] = -1;  //  angular rate unsupported
+    for (int i = 3; i < 6; ++i) {
+      velocity.twist.covariance[cols * i + i] = 1e6;
+    }
 
-    vel_pub_->publish(velocity);
+    if (fixOk && m.fix_type == m.FIX_TYPE_3D && m.s_acc > 0) {
+      vel_pub_->publish(velocity);
+    }
 
     //
     // Update diagnostics

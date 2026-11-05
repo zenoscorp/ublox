@@ -44,6 +44,7 @@ class HpPosRecProduct final : public virtual HpgRefProduct {
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
 
   std::string frame_id_;
+  double heading_offset_rad_;
 };
 
 }  // namespace ublox_node

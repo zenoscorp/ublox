@@ -20,6 +20,7 @@ The `ublox_gps` node supports the following parameters for all products and firm
 * `uart1/in`: UART1 in communication protocol. Defaults to UBX, NMEA & RTCM. See `CfgPRT` message for possible values.
 * `uart1/out`: UART1 out communication protocol. Defaults to UBX, NMEA & RTCM. See `CfgPRT` message for possible values.
 * `frame_id`: ROS name prepended to frames produced by the node. Defaults to `gps`.
+* `heading_offset_rad`: Mounting correction added to ENU `navheading` yaw, in radians. Defaults to 0. HP position receivers only.
 * `rate`: Rate in Hz of measurements. Defaults to 4.
 * `nav_rate`: How often navigation solutions are published in number of measurement cycles. Defaults to 1.
 * `enable_ppp`: Enable precise-point-positioning system. Defaults to false.
